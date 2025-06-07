@@ -21,15 +21,13 @@ class CoinbaseBalance:
         breakdown = self.client.get_portfolio_breakdown(self.uuid)["breakdown"].to_dict()
 
         total_balance = breakdown["portfolio_balances"]["total_balance"]
-    
-        self.total_balance[0] = total_balance["value"]
-        self.total_balance[1] = total_balance["currency"]
+
+        self.total_balance[0], self.total_balance[1] = total_balance["value"], total_balance["currency"]
 
         spot = breakdown["spot_positions"]
         
-        for asset in spot: 
-            type = asset["asset"]
-            self.assets[type] = asset["total_balance_crypto"]
+        for asset in spot:
+            self.assets[asset["asset"]] = asset["total_balance_crypto"]
 
     # Method for testing through terminal
     def display_data(self):
