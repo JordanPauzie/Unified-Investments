@@ -4,14 +4,22 @@ from coinbase.rest import RESTClient
 
 class SchwabBalance:
     def __init__(self):
-        self.total_balance = [0, "USD"]
-        self.assets = {}
+        self._total_balance = [0, "USD"]
+        self._assets = {}
 
         # WIP
 
     def get_portfolio_data(self):
         return
         # WIP
+
+    @property
+    def total_balance(self):
+        return self._total_balance
+
+    @property
+    def assets(self):
+        return self._assets
 
     # Method for testing through terminal
     def display_data(self):

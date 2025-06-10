@@ -2,10 +2,16 @@ import os
 from dotenv import load_dotenv
 from coinbase.rest import RESTClient  # Ensure this is the correct import
 
+class Crypto:
+    def __init__(self):
+        pass
+
+    # Idea: store information about each crypto you own in an object for easy storage/retrieval
+
 class CoinbaseBalance:
     def __init__(self):
         self._total_balance = [0, "USD"]
-        self._assets = {}
+        self._assets = {} # Will store Crypto objects instead of key-value pairs - will apply a similar idea for Schwab (traditional assets)
 
         load_dotenv()
 
@@ -15,9 +21,9 @@ class CoinbaseBalance:
         self._client = RESTClient(api_key=api_key, api_secret=api_secret)
         self._uuid = self._client.get_portfolios()["portfolios"][0]["uuid"]
 
-        self._get_portfolio_data()
+        self.get_portfolio_data()
 
-    def _get_portfolio_data(self):
+    def get_portfolio_data(self):
         breakdown = self._client.get_portfolio_breakdown(self._uuid)["breakdown"].to_dict()
 
         total_balance = breakdown["portfolio_balances"]["total_balance"]

@@ -5,7 +5,10 @@ from coinbase_module import CoinbaseBalance
 from schwab_module import SchwabBalance 
 
 def generate_pie(coinbase, schwab):
-    coinbase.total_balance
+    cb_balance = coinbase.total_balance()
+    sb_balance = schwab.total_balance()
+
+    
 
 
 
