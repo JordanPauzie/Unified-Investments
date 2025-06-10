@@ -1,17 +1,39 @@
 import os
 from dotenv import load_dotenv
-from coinbase.rest import RESTClient  # Ensure this is the correct import
+from coinbase.rest import RESTClient
 
-class Crypto:
-    def __init__(self):
-        pass
+class Coin:
+    def __init__(self, asset):
+        self._coin_value = asset["total_balance_crypto"]
+        self._curr_value = asset["total_balance_fiat"]
+        self._cost_average = asset["average_entry_price"]["value"]
+        self._cost_basis = asset["cost_basis"]["value"]
+        self._allocation = asset["allocation"]
 
-    # Idea: store information about each crypto you own in an object for easy storage/retrieval
+    @property
+    def coin_value(self):
+        return self._coin_value
+
+    @property
+    def curr_value(self):
+        return self._curr_value
+    
+    @property
+    def cost_average(self):
+        return self._cost_average
+
+    @property
+    def cost_basis(self):
+        return self._cost_basis
+    
+    @property
+    def allocation(self):
+        return self._allocation
 
 class CoinbaseBalance:
     def __init__(self):
         self._total_balance = [0, "USD"]
-        self._assets = {} # Will store Crypto objects instead of key-value pairs - will apply a similar idea for Schwab (traditional assets)
+        self._assets = {}
 
         load_dotenv()
 
@@ -31,7 +53,7 @@ class CoinbaseBalance:
         self._total_balance[0], self._total_balance[1] = total_balance["value"], total_balance["currency"]
 
         for asset in breakdown["spot_positions"]:
-            self._assets[asset["asset"]] = asset["total_balance_crypto"]
+            self._assets[asset["asset"]] = Coin(asset)
 
     @property
     def total_balance(self):
