@@ -34,6 +34,7 @@ class CoinbaseBalance:
     def __init__(self):
         self._total_balance = [0, "USD"]
         self._assets = {}
+        self._cash = 0
 
         load_dotenv()
 
@@ -53,7 +54,10 @@ class CoinbaseBalance:
         self._total_balance[0], self._total_balance[1] = total_balance["value"], total_balance["currency"]
 
         for asset in breakdown["spot_positions"]:
-            self._assets[asset["asset"]] = Coin(asset)
+            if (not asset["is_cash"]):
+                self._assets[asset["asset"]] = Coin(asset)
+            else:
+                self._cash = asset["total_balance_fiat"]
 
     @property
     def total_balance(self):
@@ -62,13 +66,19 @@ class CoinbaseBalance:
     @property
     def assets(self):
         return self._assets
+    
+    @property
+    def cash(self):
+        return self._cash
 
     # Method for testing through terminal
     def display_data(self):
         print("Assets held in Coinbase:")
 
         for key, val in self._assets.items():
-            print(val, key)
+            print(val.coin_value, val.curr_value, val.cost_average, val.cost_basis, val.allocation, key)
+
+        print(self.cash)
 
         print("Total portfolio value:", self._total_balance[0], self._total_balance[1])
 
