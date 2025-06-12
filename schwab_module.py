@@ -5,7 +5,9 @@ from coinbase.rest import RESTClient
 class SchwabBalance:
     def __init__(self):
         self._total_balance = [0, "USD"]
+        self._total_cost_basis = [0, "USD"]
         self._assets = {}
+        self._cash = 0
 
         # WIP
 
@@ -16,6 +18,10 @@ class SchwabBalance:
     @property
     def total_balance(self):
         return self._total_balance
+    
+    @property
+    def total_cost_basis(self):
+        return self._total_cost_basis
 
     @property
     def assets(self):
