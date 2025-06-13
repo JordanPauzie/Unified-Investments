@@ -33,6 +33,6 @@ class SchwabBalance:
         # WIP
 
 # main() function for testing
-if __name__ == '__main__':
-    coin = SchwabBalance()
-    coin.display_data()
+# if __name__ == '__main__':
+#     coin = SchwabBalance()
+#     coin.display_data()
