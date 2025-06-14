@@ -43,7 +43,7 @@ class Visualization:
     
     # Display table displaying total portfolio data and performance
     def display_total_portfolio_performance(self):
-        plt.figure(figsize=(10, (len(self.cb_assets) + len(self.sb_assets))*0.5 + 1))
+        fig = plt.figure(figsize=(5, (len(self.cb_assets) + len(self.sb_assets))*0.5 + 1))
 
         total_unrealized_return = None
         percentage_change = abs(round((float(self.total_balance) - float(self.total_cost_basis)) / float(self.total_cost_basis) * 100, 2))
@@ -70,15 +70,16 @@ class Visualization:
         )
 
         table.auto_set_font_size(False)
-        table.set_fontsize(10)
+        table.set_fontsize(5)
         table.scale(1.3, 1.3)
 
         plt.tight_layout()
-        plt.show(block=False)
+        
+        return fig
 
     # Display table displaying individual asset data and respective market performance  
     def plot_asset_table(self):
-        plt.figure(figsize=(10, (len(self.cb_assets) + len(self.sb_assets))*0.5 + 1))
+        fig = plt.figure(figsize=(5, (len(self.cb_assets) + len(self.sb_assets))*0.5 + 1))
 
         table_data = []
 
@@ -117,11 +118,12 @@ class Visualization:
         )
 
         table.auto_set_font_size(False)
-        table.set_fontsize(10)
+        table.set_fontsize(5)
         table.scale(1.3, 1.3)
 
         plt.tight_layout()
-        plt.show(block=False)
+        
+        return fig
 
     # Display total portfolio value as pie chart alongside individual asset values
     def portfolio_breakdown_pie_chart(self):
@@ -135,7 +137,7 @@ class Visualization:
         # Add data from Schwab
         # WIP
 
-        plt.figure(figsize=(8, 8))
+        fig = plt.figure(figsize=(3, 3))
         wedges, texts, autotexts = plt.pie(
             x=total_asset_values,
             labels=total_asset_indices,
@@ -144,23 +146,24 @@ class Visualization:
             colors=sns.color_palette('Set2'),
             startangle=90,
             counterclock=False,
-            textprops={'fontsize': 10, 'fontfamily': 'monospace'}
+            textprops={'fontsize': 5, 'fontfamily': 'monospace'}
         )
 
         centre_circle = plt.Circle((0, 0), 0.65, fc='white')
         plt.gca().add_artist(centre_circle)
-        plt.title("Assets", fontsize=10, fontfamily='monospace')
+        plt.title("Assets", fontsize=5, fontfamily='monospace')
         plt.tight_layout()
-        plt.show(block=False)
+        
+        return fig
 
 # main() function for testing
-if __name__ == '__main__':
-    coin = CoinbaseBalance()
-    schwab = SchwabBalance()
-    plots = Visualization(coin, schwab)
+# if __name__ == '__main__':
+#     coin = CoinbaseBalance()
+#     schwab = SchwabBalance()
+#     plots = Visualization(coin, schwab)
     
-    plots.portfolio_breakdown_pie_chart()
-    plots.plot_asset_table()
-    plots.display_total_portfolio_performance()
+#     plots.portfolio_breakdown_pie_chart()
+#     plots.plot_asset_table()
+#     plots.display_total_portfolio_performance()
 
-    input("Press Enter to close all plots...")
+#     input("Press Enter to close all plots...")
