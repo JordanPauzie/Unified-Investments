@@ -96,7 +96,7 @@ class CoinbaseBalance:
         print("Total portfolio value:", self._total_balance[0], self._total_balance[1])
 
 # main() function for testing
-# if __name__ == '__main__':
-#     coin = CoinbaseBalance()
-#     coin.display_data()
+if __name__ == '__main__':
+    coin = CoinbaseBalance()
+    coin.display_data()
     
