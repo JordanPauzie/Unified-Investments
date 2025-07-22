@@ -3,6 +3,7 @@ import base64
 import requests
 import pandas
 import webbrowser
+
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -15,11 +16,11 @@ class Asset:
         self._unrealized_return = asset["longOpenProfitLoss"]
 
     @property
-    def _type(self):
+    def type(self):
         return self._type
     
     @property
-    def _asset_count(self):
+    def asset_count(self):
         return self._asset_count
 
     @property
@@ -52,12 +53,11 @@ class InitializeAPI:
 
     def construct_headers_and_payload(self, returned_url, app_key, app_secret):
         callback = os.getenv("CALLBACK")
-        response_code = f"{returned_url[returned_url.index('code=') + 5: returned_url.index('%40')]}@"
-        credentials = f"{app_key}:{app_secret}"
 
-        base64_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
-            "utf-8"
-        )
+        response_code = f"{returned_url[returned_url.index('code=') + 5: returned_url.index('%40')]}@"
+
+        credentials = f"{app_key}:{app_secret}"
+        base64_credentials = base64.b64encode(credentials.encode("utf-8")).decode("utf-8")
 
         headers = {
             "Authorization": f"Basic {base64_credentials}",
@@ -85,11 +85,9 @@ class InitializeAPI:
 
     def auth_request_tokens(self):
         app_key, app_secret, cs_auth_url = self.construct_init_auth_url()
-
         webbrowser.open(cs_auth_url)
 
         logger.info("Paste Returned URL:")
-
         returned_url = input()
 
         init_token_headers, init_token_payload = self.construct_headers_and_payload(
@@ -100,48 +98,7 @@ class InitializeAPI:
             headers=init_token_headers, payload=init_token_payload
         )
 
-        return 
-    
-    def refresh_tokens(self, token):
-        logger.info("Initializing...")
-
-        refresh_token = token["refresh_token"]
-
-        if not refresh_token:
-            logger.error("No refresh token found. Aborting.")
-
-            return None
-
-        payload = {
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-        }
-
-        base64_credentials = base64.b64encode(
-            f"{self._app_key}:{self._app_secret}".encode()
-        ).decode()
-
-        headers = {
-            "Authorization": f"Basic {base64_credentials}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-
-        response = requests.post(
-            url="https://api.schwabapi.com/v1/oauth/token",
-            headers=headers,
-            data=payload,
-        )
-
-        if response.status_code == 200:
-            logger.info("Token refresh successful.")
-            token_data = response.json()
-            logger.debug(token_data)
-
-            return token_data
-        else:
-            logger.error(f"Failed to refresh token: {response.status_code} — {response.text}")
-
-            return None
+        return init_tokens_dict
 
     def get_hash(self, tokens):
         response = requests.get(
@@ -151,17 +108,55 @@ class InitializeAPI:
         response_frame = pandas.json_normalize(response.json())
 
         return response_frame["hashValue"].iloc[0]
+    
+    def refresh_tokens(self, tokens):
+        logger.info("Initializing...")
+
+        refresh_token = tokens["refresh_token"]
+
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        }
+        headers = {
+            "Authorization": f'Basic {base64.b64encode(f"{self._app_key}:{self._app_secret}".encode()).decode()}',
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        refresh_response = requests.post(
+            url="https://api.schwabapi.com/v1/oauth/token",
+            headers=headers,
+            data=payload,
+        )
+        if refresh_response.status_code == 200:
+            logger.info("Retrieved new tokens successfully using refresh token.")
+        else:
+            logger.error(
+                f"Error refreshing access token: {refresh_response.text}"
+            )
+            return None
+
+        refresh_token_dict = refresh_response.json()
+
+        logger.debug(refresh_token_dict)
+
+        logger.info("Token dict refreshed.")
+
+        return refresh_token_dict
 
 class SchwabBalance:
     def __init__(self):
         self._init = InitializeAPI()
         self._total_balance = [0, "USD"]
+        self._total_cost_basis = [0, "USD"]
         self._assets = {}
         self._cash = 0
         self._tokens = self._init.auth_request_tokens()
         self._hash = self._init.get_hash(self._tokens)
 
     def get_portfolio_data(self):
+        self._tokens = self._init.refresh_tokens(self._tokens)
+
         url = f"https://api.schwabapi.com/trader/v1/accounts/{self._hash}?fields=positions"
 
         headers = {
@@ -176,15 +171,36 @@ class SchwabBalance:
             positions = data["positions"]
             balance = data["currentBalances"]
 
+            self._assets = {}
+            self._total_cost_basis[0] = 0
+
             for asset in positions:
-                self._assets[asset["instrument"]["type"]] = Asset(asset)
+                self._assets[asset["instrument"]["symbol"]] = Asset(asset)
+                self._total_cost_basis[0] += asset["longOpenProfitLoss"]
             
             self._cash = balance["cashBalance"]
             self._total_balance[0] = balance["liquidationValue"]
+            self._total_cost_basis[0] += self.total_balance[0]
         else:
             print(f"Error {response.status_code}: {response.text}")
 
         return
+
+    @property
+    def total_balance(self):
+        return self._total_balance
+    
+    @property
+    def total_cost_basis(self):
+        return self._total_cost_basis
+
+    @property
+    def assets(self):
+        return self._assets
+    
+    @property
+    def cash(self):
+        return self._cash
     
     # Method for testing through terminal
     def parse_positions(self, positions):
@@ -195,25 +211,33 @@ class SchwabBalance:
                 print(key, f":", value, "\n")
         return
 
-    @property
-    def total_balance(self):
-        return self._total_balance
-
-    @property
-    def assets(self):
-        return self._assets
-    
-    @property
-    def cash(self):
-        return self._cash
-
     # Method for testing through terminal
     def display_data(self):
+        print("Assets held in Schwab:")
+
+        for key, val in self._assets.items():
+            print(key, f":", val.type, val.asset_count, val.cost_average, val.curr_value, val.unrealized_return)
+
+        print(f"Cash :", self.cash, self._total_balance[1])
+
+        print("Total portfolio cost-basis:", self._total_cost_basis[0], self._total_cost_basis[1])
+
+        print("Total portfolio value:", self._total_balance[0], self._total_balance[1])
+
         return
-        # WIP
 
 # main() function for testing
 if __name__ == '__main__':
     port = SchwabBalance()
     port.get_portfolio_data()
-    #port.display_data()
+    port.display_data()
+
+    run = True
+
+    while run:
+        n = input("Refresh? (Y/N)")
+        if (n == "Y"):
+            port.get_portfolio_data()
+            port.display_data()
+        elif (n == "N"):
+            run = False
