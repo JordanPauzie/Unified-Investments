@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C138E04C2E3295DA00BB8598 /* KeychainSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C138E04B2E3295DA00BB8598 /* KeychainSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C13865562E2F32CA00BB8598 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C138E04C2E3295DA00BB8598 /* KeychainSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,7 +106,6 @@
 			buildPhases = (
 				C138653E2E2F32C800BB8598 /* Sources */,
 				C138653F2E2F32C800BB8598 /* Frameworks */,
-				C13865402E2F32C800BB8598 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -112,6 +116,7 @@
 			);
 			name = "Unified Portfolio";
 			packageProductDependencies = (
+				C138E04B2E3295DA00BB8598 /* KeychainSwift */,
 			);
 			productName = "Unified Portfolio";
 			productReference = C13865422E2F32C800BB8598 /* Unified Portfolio.app */;
@@ -195,6 +200,9 @@
 			);
 			mainGroup = C13865392E2F32C800BB8598;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C138E04A2E3295DA00BB8598 /* XCRemoteSwiftPackageReference "keychain-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C13865432E2F32C800BB8598 /* Products */;
 			projectDirPath = "";
@@ -208,13 +216,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C13865402E2F32C800BB8598 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C13865532E2F32CA00BB8598 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -589,6 +590,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C138E04A2E3295DA00BB8598 /* XCRemoteSwiftPackageReference "keychain-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/evgenyneu/keychain-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 24.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C138E04B2E3295DA00BB8598 /* KeychainSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C138E04A2E3295DA00BB8598 /* XCRemoteSwiftPackageReference "keychain-swift" */;
+			productName = KeychainSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C138653A2E2F32C800BB8598 /* Project object */;
 }

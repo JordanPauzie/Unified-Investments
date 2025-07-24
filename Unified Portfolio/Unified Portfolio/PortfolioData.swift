@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import PythonKit
 
 struct PortfolioData: Codable {
     let initial_investment: Double
@@ -19,40 +20,50 @@ struct PieChartData: Codable {
     let values: [Double]
 }
 
-// Combined wrapper
-struct output: Codable {
+struct Output: Codable {
     let portfolio_data: PortfolioData
     let assets: [[String]]
     let pie_chart: PieChartData
 }
 
-func acquireVisualizationData() {
-    let task = Process()
-    
-    let fileManager = FileManager.default
-    let projectDir = fileManager.currentDirectoryPath
+// Since I'm refactoring everything to Swift, I'm not sure if I'll need this logic or not in the future
 
-    let envPath = "\(projectDir)/Python/coinbase-env/bin/python3"
-    let scriptPath = "\(projectDir)/Python/visualization_data.py"
-    
-    task.executableURL = URL(fileURLWithPath: envPath)
-    task.arguments = [scriptPath]
-
-    do {
-        try task.run()
-        task.waitUntilExit()
-    } catch {
-        print("Failed to run Python script: \(error)")
-    }
-}
-
-func loadPortfolioData() throws -> output {
-    let fileManager = FileManager.default
-    let projectDir = fileManager.currentDirectoryPath
-
-    let jsonPath = "\(projectDir)/Python/visualization_data.json"
-    let url = URL(fileURLWithPath: jsonPath)
-    let data = try Data(contentsOf: url)
-
-    return try JSONDecoder().decode(output.self, from: data)
-}
+//func acquireVisualizationData() -> Output? {
+//    // let task = Process() 
+//    let fileManager = FileManager.default
+//    let projectDir = fileManager.currentDirectoryPath
+//
+//    let sys = Python.import("sys")
+//
+//    sys.path.append("\(projectDir)/Python")
+//
+//    // let envPath = "\(projectDir)/Python/coinbase-env/bin/python3"
+//    // let envPath = "/usr/bin/python3"
+//    // let scriptPath = "\(projectDir)/Python/visualization_data.py"
+//
+//    let vis = Python.import("visualization_data")
+//    let result = vis.get_visualization_data()
+//    
+//    // task.executableURL = URL(fileURLWithPath: envPath)
+//    // task.arguments = [scriptPath]
+//
+//    // do {
+//    //     try task.run()
+//    //     task.waitUntilExit()
+//    // } catch {
+//    //     print("Failed to run Python script: \(error)")
+//    // }
+//
+//    guard let jsonData = try? JSONSerialization.data(withJSONObject: result.__tojson__().asObject, options: []) else {
+//        print("Failed to convert Python data to JSON")
+//        return nil
+//    }
+//
+//    do {
+//        let decoded = try JSONDecoder().decode(Output.self, from: jsonData)
+//        return decoded
+//    } catch {
+//        print("Failed to decode JSON into Swift Output: \(error)")
+//        return nil
+//    }
+//}
