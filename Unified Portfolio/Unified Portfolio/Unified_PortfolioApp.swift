@@ -10,6 +10,11 @@ import SwiftData
 
 @main
 struct Unified_PortfolioApp: App {
+//    init() {
+//        setenv("PYTHON_LIBRARY", "/Library/Frameworks/Python.framework/Versions/3.13/lib/libpython3.13.dylib", 1)
+//        PythonLibrary.useVersion(3, 13)
+//    }
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,

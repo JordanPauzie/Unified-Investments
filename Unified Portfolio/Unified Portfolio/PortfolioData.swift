@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import PythonKit
 
 struct PortfolioData: Codable {
     let initial_investment: Double
