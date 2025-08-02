@@ -130,7 +130,7 @@ class CoinbaseBalance: ObservableObject {
                         let coin = Coin(from: asset)
                         let name = asset["asset"] as? String
                         assetDict[name!] = coin
-                    } else if let fiat = asset["total_balance_fiat"] as? Double {
+                    } else if asset["total_balance_fiat"] is Double {
                         totalCash = doubleFrom(asset, key: "total_balance_fiat")
                     }
 
@@ -157,15 +157,5 @@ class CoinbaseBalance: ObservableObject {
         } catch {
             print("Holdings request failed: \(error)")
         }
-    }
-
-    // Helper function for converting String to Double
-    func doubleFrom(_ dict: [String: Any], key: String) -> Double {
-        if let str = dict[key] as? String {
-            return Double(str) ?? 0.0
-        } else if let val = dict[key] as? Double {
-            return val
-        }
-        return 0.0
     }
 }
