@@ -109,14 +109,63 @@ class CoinbaseBalance: ObservableObject {
             }
 
             if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                print("Holdings JSON: \(json)")
+                guard let breakdown = json["breakdown"] as? [String: Any],
+                    let spotPositions = breakdown["spot_positions"] as? [[String: Any]],
+                    let portfolioBalance = breakdown["portfolio_balances"] as? [String: Any],
+                    let totalPortfolioBalance = portfolioBalance["total_balance"] as? [String: Any],
+                    let totalCurrency = totalPortfolioBalance["currency"] as? String
+                else {
+                    print("Unexpected JSON structure in holdings")
+                    return
+                }
+                
+                let totalValue = doubleFrom(totalPortfolioBalance, key: "value")
+
+                var assetDict: [String: Coin] = [:]
+                var totalCostBasis: Double = 0.0
+                var totalCash: Double = 0.0
+
+                for asset in spotPositions {
+                    if let isCash = asset["is_cash"] as? Bool, !isCash {
+                        let coin = Coin(from: asset)
+                        let name = asset["asset"] as? String
+                        assetDict[name!] = coin
+                    } else if let fiat = asset["total_balance_fiat"] as? Double {
+                        totalCash = doubleFrom(asset, key: "total_balance_fiat")
+                    }
+
+                    if let costBasisDict = asset["cost_basis"] as? [String: Any] {
+                        totalCostBasis += doubleFrom(costBasisDict, key: "value")
+                    }
+                }
+
+                DispatchQueue.main.async {
+                    self.totalBalance = (totalValue, totalCurrency)
+                    self.totalCostBasis = (totalCostBasis, totalCurrency)
+                    self.assets = assetDict
+                    self.cash = totalCash
+                }
+
+                // Testing
+                print(self.totalBalance)
+                print(self.totalCostBasis)
+                print(self.assets)
+                print(self.cash)
             } else {
                 print("Failed to decode holdings JSON")
             }
         } catch {
             print("Holdings request failed: \(error)")
         }
+    }
 
-        // At the moment just print out portfolio data -> eventually will return as a parsed object for usage somewhere else
+    // Helper function for converting String to Double
+    func doubleFrom(_ dict: [String: Any], key: String) -> Double {
+        if let str = dict[key] as? String {
+            return Double(str) ?? 0.0
+        } else if let val = dict[key] as? Double {
+            return val
+        }
+        return 0.0
     }
 }
