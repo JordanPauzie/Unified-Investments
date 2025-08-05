@@ -9,6 +9,24 @@ import Foundation
 import KeychainSwift
 import SwiftJWT
 
+struct Coin {
+    let coinValue: Double
+    let currentValue: Double
+    let costAverage: Double
+    let costBasis: Double
+    let unrealizedReturn: (Double, Bool)
+
+    init(from asset: [String: Any]) {
+        self.coinValue = doubleFrom(asset, key: "total_balance_crypto")
+        self.currentValue = doubleFrom(asset, key: "total_balance_fiat")
+        self.costAverage = doubleFrom(asset["average_entry_price"] as? [String: Any] ?? [:], key: "value")
+        self.costBasis = doubleFrom(asset["cost_basis"] as? [String: Any] ?? [:], key: "value")
+
+        let diff = self.currentValue - self.costBasis
+        self.unrealizedReturn = (abs(diff), diff >= 0)
+    }
+}
+
 class CoinbaseBalance: ObservableObject {
     @Published var totalBalance: (Double, String) = (0, "USD")
     @Published var totalCostBasis: (Double, String) = (0, "USD")
@@ -158,4 +176,5 @@ class CoinbaseBalance: ObservableObject {
             print("Holdings request failed: \(error)")
         }
     }
+
 }

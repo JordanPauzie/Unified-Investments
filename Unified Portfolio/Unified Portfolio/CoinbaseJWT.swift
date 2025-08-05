@@ -1,5 +1,5 @@
 //
-//  Coin.swift
+//  CoinbaseJWT.swift
 //  Unified Portfolio
 //
 //  Created by Jordan Pauzie on 8/1/25.

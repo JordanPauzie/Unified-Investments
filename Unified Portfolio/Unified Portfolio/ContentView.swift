@@ -15,55 +15,141 @@ struct ContentView: View {
     @State private var savedPrivateKey = ""
 
     let secrets = SecretsManager()
-    
+
     @StateObject private var coinbaseBalance = CoinbaseBalance()
+    @StateObject private var schwabBalance = SchwabBalance()
+
+    @State private var schwabHash = ""
+
+    @State private var schwabKey = ""
+    @State private var schwabSecret = ""
+    @State private var schwabCallback = ""
+    @State private var savedSchwabKey = ""
+    @State private var savedSchwabSecret = ""
+    @State private var savedSchwabCallback = ""
+
+    @State private var schwabAuthMessage = ""
 
     var body: some View {
-        VStack(spacing: 20) {
-            // --- API Key Entry ---
-            TextField("Enter Coinbase Public Key", text: $coinbasePublicKey)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
+        ScrollView {
+            VStack(spacing: 20) {
+                // --- Coinbase Section ---
+                Text("🪙 Coinbase")
+                    .font(.headline)
 
-            Button("Save Public Key") {
-                secrets.setCoinbasePublic(coinbasePublicKey)
-            }
+                TextField("Enter Coinbase Public Key", text: $coinbasePublicKey)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
 
-            Button("Load Public Key") {
-                savedPublicKey = secrets.getCoinbasePublic() ?? "Nothing found"
-            }
-
-            Text("Saved Public Key: \(savedPublicKey)")
-                .padding()
-
-            TextField("Enter Coinbase Private Key", text: $coinbasePrivateKey)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-
-            Button("Save Private Key") {
-                secrets.setCoinbasePrivate(coinbasePrivateKey)
-            }
-
-            Button("Load Private Key") {
-                savedPrivateKey = secrets.getCoinbasePrivate() ?? "Nothing found"
-            }
-
-            Text("Saved Private Key: \(savedPrivateKey)")
-                .padding()
-
-            Divider()
-
-            // --- CoinbaseBalance ViewModel ---
-            Button("Fetch Coinbase Portfolio") {
-                Task {
-                    await coinbaseBalance.getPortfolioData()
+                Button("Save Public Key") {
+                    secrets.setCoinbasePublic(coinbasePublicKey)
                 }
-            }
 
-            Text("Total Balance: \(coinbaseBalance.totalBalance.0, specifier: "%.2f") \(coinbaseBalance.totalBalance.1)")
-                .padding()
+                Button("Load Public Key") {
+                    savedPublicKey = secrets.getCoinbasePublic() ?? "Nothing found"
+                }
+
+                Text("Saved Public Key: \(savedPublicKey)")
+                    .padding()
+
+                TextField("Enter Coinbase Private Key", text: $coinbasePrivateKey)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Save Private Key") {
+                    secrets.setCoinbasePrivate(coinbasePrivateKey)
+                }
+
+                Button("Load Private Key") {
+                    savedPrivateKey = secrets.getCoinbasePrivate() ?? "Nothing found"
+                }
+
+                Text("Saved Private Key: \(savedPrivateKey)")
+                    .padding()
+
+                Button("Fetch Coinbase Portfolio") {
+                    Task {
+                        await coinbaseBalance.getPortfolioData()
+                    }
+                }
+
+                Text("Total Balance: \(coinbaseBalance.totalBalance.0, specifier: "%.2f") \(coinbaseBalance.totalBalance.1)")
+                    .padding()
+
+                Divider()
+
+                // --- Schwab Section ---
+                Text("🏦 Schwab")
+                    .font(.headline)
+
+                TextField("Enter Schwab Key", text: $schwabKey)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Save Public Key") {
+                    secrets.setSchwabAppKey(schwabKey)
+                }
+
+                Button("Load Public Key") {
+                    savedSchwabKey = secrets.getSchwabAppKey() ?? "Nothing found"
+                }
+
+                Text("Saved Public Key: \(savedSchwabKey)")
+                    .padding()
+
+                TextField("Enter Schwab Secret", text: $schwabSecret)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Save Private Key") {
+                    secrets.setSchwabSecret(schwabSecret)
+                }
+
+                Button("Load Private Key") {
+                    savedSchwabSecret = secrets.getSchwabSecret() ?? "Nothing found"
+                }
+
+                Text("Saved Private Key: \(savedSchwabSecret)")
+                    .padding()
+
+                TextField("Enter Schwab Callback", text: $schwabCallback)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Save Private Key") {
+                    secrets.setSchwabCallback(schwabCallback)
+                }
+
+                Button("Load Private Key") {
+                    savedSchwabCallback = secrets.getSchwabCallback() ?? "Nothing found"
+                }
+
+                Text("Saved Private Key: \(savedSchwabCallback)")
+                    .padding()
+
+                Button("Fetch Schwab Portfolio") {
+                    Task {
+                        await schwabBalance.getPortfolioData()
+                    }
+                    
+                    Task {
+                        do {
+                            let tokens = try await schwabBalance.authRequestTokens()                        
+                            schwabHash = try await schwabBalance.getHash(tokens: tokens)
+                            schwabAuthMessage = "Succesful token/hash retrieval."
+                        } catch {
+                            print("Error during auth/token/hash: \(error)")
+                        }
+                    }
+                }
+
+                Text(schwabAuthMessage)
+                    .font(.subheadline)
+                    .foregroundColor(.green)
+            }
+            .padding()
         }
-        .padding()
     }
 }
+
 
