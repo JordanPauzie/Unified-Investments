@@ -190,6 +190,8 @@ class SchwabBalance: ObservableObject {
     }
 
     func getPortfolioData() async {
+        loadSecrets()
+        
         do {
             self.tokens = try await refreshTokens(tokens: self.tokens)
 
@@ -230,7 +232,7 @@ class SchwabBalance: ObservableObject {
                     self.totalCostBasis.0 += self.totalBalance.0
                 }
             }
-            
+
             // Testing
                 print(self.totalBalance)
                 print(self.totalCostBasis)

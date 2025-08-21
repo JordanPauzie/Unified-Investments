@@ -27,6 +27,7 @@ struct Coin {
     }
 }
 
+@MainActor
 class CoinbaseBalance: ObservableObject {
     @Published var totalBalance: (Double, String) = (0, "USD")
     @Published var totalCostBasis: (Double, String) = (0, "USD")
@@ -173,5 +174,4 @@ class CoinbaseBalance: ObservableObject {
             print("Holdings request failed: \(error)")
         }
     }
-
 }

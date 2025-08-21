@@ -36,7 +36,7 @@ func generateCoinbaseJWT(apiKey: String, apiSecret: String, method: String, path
 
     let apiSecret = apiSecret.replacingOccurrences(of: "\\n", with: "\n")
 
-    let jwtSigner = try JWTSigner.es256(privateKey: Data(apiSecret.utf8))
+    let jwtSigner = JWTSigner.es256(privateKey: Data(apiSecret.utf8))
 
     return try jwt.sign(using: jwtSigner)
 }
