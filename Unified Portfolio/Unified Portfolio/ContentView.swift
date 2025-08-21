@@ -127,21 +127,58 @@ struct ContentView: View {
                 Text("Saved Private Key: \(savedSchwabCallback)")
                     .padding()
 
-                Button("Fetch Schwab Portfolio") {
-                    Task {
-                        await schwabBalance.getPortfolioData()
-                    }
+                // Button("Fetch Schwab Portfolio") {
+                //     Task {
+                //         await schwabBalance.getPortfolioData()
+                //     }
                     
+                //     Task {
+                //         do {
+                //             let tokens = try await schwabBalance.authRequestTokens()                        
+                //             schwabHash = try await schwabBalance.getHash(tokens: tokens)
+                //             schwabAuthMessage = "Succesful token/hash retrieval."
+                //         } catch {
+                //             print("Error during auth/token/hash: \(error)")
+                //         }
+                //     }
+                // }
+
+                Text("Step 1: Open Schwab Auth Link")
+                Button("Open Schwab Login") {
+                    if let url = schwabBalance.makeAuthURL() {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+
+                Text("Step 2: Paste returned URL here:")
+                TextField("Paste redirect URL", text: $schwabBalance.returnedURL)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
+                Button("Exchange Code for Tokens") {
                     Task {
                         do {
-                            let tokens = try await schwabBalance.authRequestTokens()                        
-                            schwabHash = try await schwabBalance.getHash(tokens: tokens)
-                            schwabAuthMessage = "Succesful token/hash retrieval."
+                            let tokens = try await schwabBalance.authRequestTokens(from: schwabBalance.returnedURL)
+                            schwabBalance.tokens = tokens
+                            schwabBalance.hash = try await schwabBalance.getHash(tokens: tokens)
+                            schwabAuthMessage = "✅ Succesful token/hash retrieval."
                         } catch {
-                            print("Error during auth/token/hash: \(error)")
+                            schwabAuthMessage = "❌ Error: \(error.localizedDescription)"
                         }
                     }
                 }
+
+                Button("Fetch Schwab Portfolio") {
+                Task {
+                    do {
+                        // Step 3: Fetch balances
+                        await schwabBalance.getPortfolioData()
+                        schwabAuthMessage = "✅ Successful token/hash retrieval."
+                    } catch {
+                        schwabAuthMessage = "❌ Error: \(error.localizedDescription)"
+                    }
+                }
+            }
 
                 Text(schwabAuthMessage)
                     .font(.subheadline)

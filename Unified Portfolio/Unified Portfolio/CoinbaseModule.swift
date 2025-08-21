@@ -42,9 +42,6 @@ class CoinbaseBalance: ObservableObject {
 
     init() {
         loadSecrets()
-        Task {  
-            await getPortfolioData() 
-        }
     }
 
     private func loadSecrets() {

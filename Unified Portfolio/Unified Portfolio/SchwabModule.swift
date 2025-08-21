@@ -39,12 +39,14 @@ struct Asset {
     }
 }
 
+@MainActor
 class SchwabBalance: ObservableObject {
     @Published var totalBalance: (Double, String) = (0, "USD")
     @Published var totalCostBasis: (Double, String) = (0, "USD")
     @Published var assets: [String: Asset] = [:]
     @Published var cash: Double = 0.0
     @Published var hash: String = ""
+    @Published var returnedURL: String = ""
     @Published var tokens: TokenResponse = TokenResponse(
         refreshToken: "",
         accessToken: "",
@@ -59,9 +61,6 @@ class SchwabBalance: ObservableObject {
 
     init() {
         loadSecrets()
-        Task {  
-            await getPortfolioData() 
-        }
     }
 
     private func loadSecrets() {
@@ -70,28 +69,32 @@ class SchwabBalance: ObservableObject {
         callback = keychain.get("SCHWAB_CALLBACK")
     }
 
-    func authRequestTokens() async throws -> TokenResponse {
-        guard let clientKey = appKey, let clientSecret = secret, let clientCallback = callback else {
+    func makeAuthURL() -> URL? {
+        guard let clientKey = appKey, 
+            let clientCallback = callback else { 
+            return nil 
+        }
+
+        let urlString = "https://api.schwabapi.com/v1/oauth/authorize?client_id=\(clientKey)&redirect_uri=\(clientCallback)"
+
+        return URL(string: urlString)
+    }
+
+    func authRequestTokens(from returnedURL: String) async throws -> TokenResponse {
+        guard let clientKey = appKey,
+            let clientSecret = secret,
+            let clientCallback = callback else {
             throw URLError(.badServerResponse)
         }
 
-        let authURLString = "https://api.schwabapi.com/v1/oauth/authorize?client_id=\(clientKey)&redirect_uri=\(clientCallback)"
-
-        print("Go to this URL to authenticate:")
-        print(authURLString)
-
-        NSWorkspace.shared.open(URL(string: authURLString)!)
-
-        print("Paste returned URL:")
-
-        guard let returnedURL = readLine(),
-            let codeRange = returnedURL.range(of: "code="),
-            let atRange = returnedURL.range(of: "%40") 
-        else {
+        guard let codeRange = returnedURL.range(of: "code="),
+            let atRange = returnedURL.range(of: "%40") else {
             throw URLError(.badServerResponse)
         }
 
-        let responseCode = String(returnedURL[codeRange.upperBound..<atRange.lowerBound]) + "@"
+        let responseCodeStartIndex = returnedURL.index(codeRange.lowerBound, offsetBy: 5)
+        let responseCode = String(returnedURL[responseCodeStartIndex..<atRange.lowerBound]) + "@"
+
         let credentials = "\(clientKey):\(clientSecret)"
         let base64Credentials = Data(credentials.utf8).base64EncodedString()
 
@@ -103,7 +106,7 @@ class SchwabBalance: ObservableObject {
         let bodyParams = [
             "grant_type": "authorization_code",
             "code": responseCode,
-            "redirect_uri": callback
+            "redirect_uri": clientCallback
         ]
 
         request.httpBody = bodyParams
@@ -113,18 +116,21 @@ class SchwabBalance: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
+        if let httpResponse = response as? HTTPURLResponse {
+            print("HTTP status: \(httpResponse.statusCode)")
+        }
+
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
 
         let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
-
+        
         return tokenResponse
     }
 
     func getHash(tokens: TokenResponse) async throws -> String {
         var request = URLRequest(url: URL(string: "https://api.schwabapi.com/trader/v1/accounts/accountNumbers")!)
-
         request.httpMethod = "GET"
         request.setValue("Bearer \(tokens.accessToken)", forHTTPHeaderField: "Authorization")
 
@@ -133,30 +139,105 @@ class SchwabBalance: ObservableObject {
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw URLError(.badServerResponse)
         }
-
-        if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let accounts = json["accountNumbers"] as? [[String: Any]],
-            let hash = accounts.first?["hashValue"] as? String {
+        
+        if let accounts = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+        let hash = accounts.first?["hashValue"] as? String {
             return hash
         } else {
             throw URLError(.badServerResponse)
         }
     }
 
+    func refreshTokens(tokens: TokenResponse) async throws -> TokenResponse {
+        guard let clientKey = appKey,
+            let clientSecret = secret else {
+            throw URLError(.badServerResponse)
+        }
+
+        let credentials = "\(clientKey):\(clientSecret)"
+        let base64Credentials = Data(credentials.utf8).base64EncodedString()
+        let refreshToken = tokens.refreshToken
+
+        var request = URLRequest(url: URL(string: "https://api.schwabapi.com/v1/oauth/token")!)
+        
+        request.httpMethod = "POST"
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let bodyParams = [
+            "grant_type": "refresh_token",
+            "refresh_token": refreshToken,
+        ]
+
+        request.httpBody = bodyParams
+            .map { "\($0.key)=\($0.value)" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            print("HTTP status: \(httpResponse.statusCode)")
+        }
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        
+        return tokenResponse
+    }
+
     func getPortfolioData() async {
-        loadSecrets()
         do {
+            self.tokens = try await refreshTokens(tokens: self.tokens)
+
+            var request = URLRequest(
+                url: URL(string: "https://api.schwabapi.com/trader/v1/accounts/\(self.hash)?fields=positions")!
+            )
+            request.httpMethod = "GET"
+            request.setValue("Bearer \(tokens.accessToken)", forHTTPHeaderField: "Authorization")
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let securities = json["securitiesAccount"] as? [String: Any],
+            let positions = securities["positions"] as? [[String: Any]],
+            let balances = securities["currentBalances"] as? [String: Any] {
+                DispatchQueue.main.async {
+                    self.assets.removeAll()
+                    self.totalCostBasis = (0, "USD")
+
+                    for pos in positions {
+                        let asset = Asset(from: pos)
+                        if let instrument = pos["instrument"] as? [String: Any],
+                        let symbol = instrument["symbol"] as? String {
+                            self.assets[symbol] = asset
+                        }
+
+                        if let openPL = pos["longOpenProfitLoss"] as? Double {
+                            self.totalCostBasis.0 += openPL
+                        }
+                    }
+
+                    self.cash = balances["cashBalance"] as? Double ?? 0.0
+                    self.totalBalance = (balances["liquidationValue"] as? Double ?? 0.0, "USD")
+                    self.totalCostBasis.0 += self.totalBalance.0
+                }
+            }
+            
             // Testing
-            let tokens = try await authRequestTokens()
-
-            self.tokens = tokens
-            self.hash = try await getHash(tokens: tokens)
-
-            print(self.tokens)
-            print(self.hash)
-            // WIP
+                print(self.totalBalance)
+                print(self.totalCostBasis)
+                print(self.assets)
+                print(self.cash)
         } catch {
-            print("Error during portfolio data fetch: \(error.localizedDescription)")
+            print("Error fetching portfolio: \(error.localizedDescription)")
         }
     }
 }
